@@ -64,3 +64,48 @@ fn link_with_title_and_properties() {
         |_| {},
     );
 }
+
+#[test]
+fn image_with_title_and_properties() {
+    html_opts_i(
+        "![alt](url \"title\"){.img-class}",
+        "<p><img src=\"url\" alt=\"alt\" title=\"title\" class=\"img-class\" /></p>\n",
+        false, // disable roundtrip
+        |_| {},
+    );
+}
+
+#[test]
+fn image_without_properties() {
+    html("![alt](url)", "<p><img src=\"url\" alt=\"alt\" /></p>\n");
+}
+
+#[test]
+fn image_with_class() {
+    html_opts_i(
+        "![alt](url){.img-class}",
+        "<p><img src=\"url\" alt=\"alt\" class=\"img-class\" /></p>\n",
+        false, // disable roundtrip
+        |_| {},
+    );
+}
+
+#[test]
+fn image_with_id() {
+    html_opts_i(
+        "![alt](url){#img-id}",
+        "<p><img src=\"url\" alt=\"alt\" id=\"img-id\" /></p>\n",
+        false, // disable roundtrip
+        |_| {},
+    );
+}
+
+#[test]
+fn image_with_attribute() {
+    html_opts_i(
+        "![alt](url){loading=\"lazy\"}",
+        "<p><img src=\"url\" alt=\"alt\" loading=\"lazy\" /></p>\n",
+        false, // disable roundtrip
+        |_| {},
+    );
+}
