@@ -16,7 +16,7 @@ use crate::ctype::{isdigit, isspace};
 use crate::entity;
 use crate::node_matches;
 use crate::nodes::{
-    self, AlertType, Ast, ListDelimType, ListType, Node, NodeAlert, NodeCodeBlock,
+    self, AlertType, Ast, LinkProperty, ListDelimType, ListType, Node, NodeAlert, NodeCodeBlock,
     NodeDescriptionItem, NodeFootnoteDefinition, NodeHeading, NodeHtmlBlock, NodeList,
     NodeMultilineBlockQuote, NodeValue, Sourcepos,
 };
@@ -84,6 +84,11 @@ pub struct ResolvedReference {
 
     /// The text of the link.
     pub title: String,
+
+    /// Properties associated with the link or image.
+    ///
+    /// Note this field is only relevant when the "link_attributes" extension is enabled.
+    pub properties: Vec<LinkProperty>,
 }
 
 struct FootnoteDefinition<'a> {
@@ -2104,6 +2109,7 @@ where
                     ResolvedReference {
                         url: strings::clean_url(&url).into(),
                         title: strings::clean_title(&title).into(),
+                        properties: Vec::new(), // References do not support properties
                     },
                 ));
             }
