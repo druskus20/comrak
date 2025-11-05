@@ -735,11 +735,14 @@ fn render_image<'a, T>(
         context.write_str("\" alt=\"")?;
         return Ok(ChildRendering::Plain);
     } else {
+        context.write_str("\"")?;
         if !nl.title.is_empty() {
-            context.write_str("\" title=\"")?;
+            context.write_str(" title=\"")?;
             context.escape(&nl.title)?;
+            context.write_str("\"")?;
         }
-        context.write_str("\" />")?;
+        render_link_properties(context, &nl.properties)?;
+        context.write_str(" />")?;
         if context.options.render.figure_with_caption {
             if !nl.title.is_empty() {
                 context.write_str("<figcaption>")?;
@@ -784,6 +787,36 @@ fn render_line_break<'a, T>(
     Ok(ChildRendering::HTML)
 }
 
+fn render_link_properties<T>(
+    context: &mut Context<T>,
+    properties: &[crate::nodes::LinkProperty],
+) -> Result<(), fmt::Error> {
+    use crate::nodes::LinkProperty;
+
+    for property in properties {
+        match property {
+            LinkProperty::Id(id) => {
+                context.write_str(" id=\"")?;
+                context.escape(id)?;
+                context.write_str("\"")?;
+            }
+            LinkProperty::Class(class) => {
+                context.write_str(" class=\"")?;
+                context.escape(class)?;
+                context.write_str("\"")?;
+            }
+            LinkProperty::Attribute { key, value } => {
+                context.write_str(" ")?;
+                context.escape(key)?;
+                context.write_str("=\"")?;
+                context.escape(value)?;
+                context.write_str("\"")?;
+            }
+        }
+    }
+    Ok(())
+}
+
 fn render_link<'a, T>(
     context: &mut Context<T>,
     node: Node<'a>,
@@ -807,11 +840,14 @@ fn render_link<'a, T>(
                     context.escape_href(url)?;
                 }
             }
+            context.write_str("\"")?;
             if !nl.title.is_empty() {
-                context.write_str("\" title=\"")?;
+                context.write_str(" title=\"")?;
                 context.escape(&nl.title)?;
+                context.write_str("\"")?;
             }
-            context.write_str("\">")?;
+            render_link_properties(context, &nl.properties)?;
+            context.write_str(">")?;
         } else {
             context.write_str("</a>")?;
         }

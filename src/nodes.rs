@@ -306,6 +306,27 @@ pub struct NodeLink {
     /// Note this field is used for the `title` attribute by the HTML formatter even for images;
     /// `alt` text is supplied in the image inline text.
     pub title: String,
+
+    /// Properties associated with the link or image.
+    ///
+    /// Note this field is only relevant when the "link_attributes" extension is enabled.
+    pub properties: Vec<LinkProperty>,
+}
+
+/// Properties for an image or link, only relevant when the "link_attributes" extension is enabled.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum LinkProperty {
+    /// Id specified  { #<id> }
+    Id(String),
+    /// Class specified { .<class> }
+    Class(String),
+    /// Key-value  attribute specified { key="value" }
+    Attribute {
+        /// The attribute key
+        key: String,
+        /// The attribute value
+        value: String,
+    },
 }
 
 /// The details of a wikilink's destination.

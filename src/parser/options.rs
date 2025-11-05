@@ -698,6 +698,7 @@ pub struct Parse<'c> {
     ///     "foo" => Some(ResolvedReference {
     ///         url: "https://www.rust-lang.org/".to_string(),
     ///         title: "The Rust Language".to_string(),
+    ///         properties: Vec::new(),
     ///     }),
     ///     _ => None,
     /// };

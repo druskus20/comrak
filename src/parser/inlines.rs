@@ -10,8 +10,8 @@ use std::{mem, ptr};
 use crate::ctype::{isdigit, ispunct, isspace};
 use crate::entity;
 use crate::nodes::{
-    Ast, Node, NodeCode, NodeFootnoteDefinition, NodeFootnoteReference, NodeLink, NodeMath,
-    NodeValue, NodeWikiLink, Sourcepos,
+    Ast, LinkProperty, Node, NodeCode, NodeFootnoteDefinition, NodeFootnoteReference, NodeLink,
+    NodeMath, NodeValue, NodeWikiLink, Sourcepos,
 };
 use crate::parser::inlines::cjk::FlankingCheckHelper;
 use crate::parser::options::{BrokenLinkReference, WikiLinksMode};
@@ -176,6 +176,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             NodeValue::Link(Box::new(NodeLink {
                 url: strings::clean_autolink(url, kind).into(),
                 title: String::new(),
+                properties: Vec::new(),
             })),
             start_column,
             end_column,
@@ -1638,14 +1639,27 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                             endall + 1
                         };
 
-                        self.scanner.pos = endall + 1;
                         let url = strings::clean_url(url);
                         let title = strings::clean_title(&self.input[starttitle..endtitle]);
+
+                        let properties_start = endall + 1;
+                        let (properties, properties_consumed) =
+                            self.parse_link_properties(properties_start);
+
+                        self.scanner.pos = properties_start + properties_consumed;
+
+                        let updated_source_end_pos = if properties_consumed > 0 {
+                            properties_start + properties_consumed
+                        } else {
+                            source_end_pos
+                        };
+
                         self.close_bracket_match(
                             is_image,
                             url.into(),
                             title.into(),
-                            source_end_pos,
+                            properties,
+                            updated_source_end_pos,
                         );
                         return None;
                     } else {
@@ -1698,6 +1712,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 is_image,
                 reff.url.clone(),
                 reff.title.clone(),
+                reff.properties.clone(),
                 self.scanner.pos,
             );
             return None;
@@ -1802,11 +1817,16 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         is_image: bool,
         url: String,
         title: String,
+        properties: Vec<LinkProperty>,
         source_end_pos: usize,
     ) {
         let last = self.brackets.pop().unwrap();
 
-        let nl = NodeLink { url, title };
+        let nl = NodeLink {
+            url,
+            title,
+            properties,
+        };
         let inl = make_inline(
             self.arena,
             if is_image {
@@ -2166,6 +2186,119 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
             self.column_offset =
                 -(self.scanner.pos as isize) + since_newline as isize + extra as isize;
         }
+    }
+
+    fn parse_link_properties(&mut self, start_pos: usize) -> (Vec<LinkProperty>, usize) {
+        let mut properties = Vec::new();
+        let mut pos = start_pos;
+
+        // check if we have properties starting with '{' (don't skip spaces first)
+        if pos >= self.input.len() || self.input.as_bytes()[pos] != b'{' {
+            return (properties, 0);
+        }
+
+        pos += 1; // skip opening '{'
+
+        // parse properties until we hit '}'
+        while pos < self.input.len() {
+            // skip whitespace
+            while pos < self.input.len()
+                && matches!(self.input.as_bytes()[pos], b' ' | b'\t' | b'\n' | b'\r')
+            {
+                pos += 1;
+            }
+
+            if pos >= self.input.len() {
+                break;
+            }
+
+            // check for closing brace
+            if self.input.as_bytes()[pos] == b'}' {
+                pos += 1; // Skip closing brace
+                break;
+            }
+
+            // parse id (#id)
+            if self.input.as_bytes()[pos] == b'#' {
+                pos += 1;
+                let start = pos;
+                while pos < self.input.len()
+                    && matches!(self.input.as_bytes()[pos], b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'-' | b'_')
+                {
+                    pos += 1;
+                }
+                if pos > start {
+                    let id = self.input[start..pos].to_string();
+                    properties.push(LinkProperty::Id(id));
+                }
+            }
+            // parse class (.class)
+            else if self.input.as_bytes()[pos] == b'.' {
+                pos += 1;
+                let start = pos;
+                while pos < self.input.len()
+                    && matches!(self.input.as_bytes()[pos], b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'-' | b'_')
+                {
+                    pos += 1;
+                }
+                if pos > start {
+                    let class = self.input[start..pos].to_string();
+                    properties.push(LinkProperty::Class(class));
+                }
+            }
+            // parse attribute (key="value")
+            else if matches!(self.input.as_bytes()[pos], b'a'..=b'z' | b'A'..=b'Z' | b'_') {
+                let key_start = pos;
+                while pos < self.input.len()
+                    && matches!(self.input.as_bytes()[pos], b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'-' | b'_')
+                {
+                    pos += 1;
+                }
+                let key_end = pos;
+
+                // skip whitespace
+                while pos < self.input.len() && matches!(self.input.as_bytes()[pos], b' ' | b'\t') {
+                    pos += 1;
+                }
+
+                // check for '='
+                if pos < self.input.len() && self.input.as_bytes()[pos] == b'=' {
+                    pos += 1;
+
+                    // Skip whitespace
+                    while pos < self.input.len()
+                        && matches!(self.input.as_bytes()[pos], b' ' | b'\t')
+                    {
+                        pos += 1;
+                    }
+
+                    // parse quoted value
+                    if pos < self.input.len() && matches!(self.input.as_bytes()[pos], b'"' | b'\'')
+                    {
+                        let quote = self.input.as_bytes()[pos];
+                        pos += 1;
+                        let value_start = pos;
+                        while pos < self.input.len() && self.input.as_bytes()[pos] != quote {
+                            pos += 1;
+                        }
+                        if pos < self.input.len() {
+                            let key = self.input[key_start..key_end].to_string();
+                            let value = self.input[value_start..pos].to_string();
+                            properties.push(LinkProperty::Attribute { key, value });
+                            pos += 1; // skip closing quote
+                        }
+                    }
+                } else {
+                    // reset if we didn't find a valid attribute
+                    pos = key_end;
+                }
+            } else {
+                // skip unknown character
+                pos += 1;
+            }
+        }
+
+        (properties, pos - start_pos)
     }
 }
 
