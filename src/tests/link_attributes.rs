@@ -91,6 +91,16 @@ fn image_with_class() {
 }
 
 #[test]
+fn image_with_multiple_classes() {
+    html_opts_i(
+        "![alt](url){.img-class .img-class2}",
+        "<p><img src=\"url\" alt=\"alt\" class=\"img-class img-class2\" /></p>\n",
+        false, // disable roundtrip
+        |_| {},
+    );
+}
+
+#[test]
 fn image_with_id() {
     html_opts_i(
         "![alt](url){#img-id}",

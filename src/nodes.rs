@@ -310,17 +310,17 @@ pub struct NodeLink {
     /// Properties associated with the link or image.
     ///
     /// Note this field is only relevant when the "link_attributes" extension is enabled.
-    pub properties: Vec<LinkProperty>,
+    pub properties: Vec<LinkAttribute>,
 }
 
 /// Properties for an image or link, only relevant when the "link_attributes" extension is enabled.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum LinkProperty {
+pub enum LinkAttribute {
     /// Id specified  { #<id> }
     Id(String),
     /// Class specified { .<class> }
     Class(String),
-    /// Key-value  attribute specified { key="value" }
+    /// Key-value attribute specified { key="value" }
     Attribute {
         /// The attribute key
         key: String,

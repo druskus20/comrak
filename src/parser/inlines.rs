@@ -10,7 +10,7 @@ use std::{mem, ptr};
 use crate::ctype::{isdigit, ispunct, isspace};
 use crate::entity;
 use crate::nodes::{
-    Ast, LinkProperty, Node, NodeCode, NodeFootnoteDefinition, NodeFootnoteReference, NodeLink,
+    Ast, LinkAttribute, Node, NodeCode, NodeFootnoteDefinition, NodeFootnoteReference, NodeLink,
     NodeMath, NodeValue, NodeWikiLink, Sourcepos,
 };
 use crate::parser::inlines::cjk::FlankingCheckHelper;
@@ -1817,7 +1817,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         is_image: bool,
         url: String,
         title: String,
-        properties: Vec<LinkProperty>,
+        properties: Vec<LinkAttribute>,
         source_end_pos: usize,
     ) {
         let last = self.brackets.pop().unwrap();
@@ -2188,7 +2188,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
         }
     }
 
-    fn parse_link_properties(&mut self, start_pos: usize) -> (Vec<LinkProperty>, usize) {
+    fn parse_link_properties(&mut self, start_pos: usize) -> (Vec<LinkAttribute>, usize) {
         let mut properties = Vec::new();
         let mut pos = start_pos;
 
@@ -2229,7 +2229,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 }
                 if pos > start {
                     let id = self.input[start..pos].to_string();
-                    properties.push(LinkProperty::Id(id));
+                    properties.push(LinkAttribute::Id(id));
                 }
             }
             // parse class (.class)
@@ -2243,7 +2243,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                 }
                 if pos > start {
                     let class = self.input[start..pos].to_string();
-                    properties.push(LinkProperty::Class(class));
+                    properties.push(LinkAttribute::Class(class));
                 }
             }
             // parse attribute (key="value")
@@ -2284,7 +2284,7 @@ impl<'a, 'r, 'o, 'd, 'c, 'p> Subject<'a, 'r, 'o, 'd, 'c, 'p> {
                         if pos < self.input.len() {
                             let key = self.input[key_start..key_end].to_string();
                             let value = self.input[value_start..pos].to_string();
-                            properties.push(LinkProperty::Attribute { key, value });
+                            properties.push(LinkAttribute::Attribute { key, value });
                             pos += 1; // skip closing quote
                         }
                     }

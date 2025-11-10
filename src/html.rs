@@ -789,23 +789,23 @@ fn render_line_break<'a, T>(
 
 fn render_link_properties<T>(
     context: &mut Context<T>,
-    properties: &[crate::nodes::LinkProperty],
+    properties: &[crate::nodes::LinkAttribute],
 ) -> Result<(), fmt::Error> {
-    use crate::nodes::LinkProperty;
+    use crate::nodes::LinkAttribute;
 
     for property in properties {
         match property {
-            LinkProperty::Id(id) => {
+            LinkAttribute::Id(id) => {
                 context.write_str(" id=\"")?;
                 context.escape(id)?;
                 context.write_str("\"")?;
             }
-            LinkProperty::Class(class) => {
+            LinkAttribute::Class(class) => {
                 context.write_str(" class=\"")?;
                 context.escape(class)?;
                 context.write_str("\"")?;
             }
-            LinkProperty::Attribute { key, value } => {
+            LinkAttribute::Attribute { key, value } => {
                 context.write_str(" ")?;
                 context.escape(key)?;
                 context.write_str("=\"")?;
