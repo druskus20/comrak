@@ -198,6 +198,7 @@ fn email_match<'a>(
         NodeValue::Link(Box::new(NodeLink {
             url,
             title: String::new(),
+            properties: Vec::new(),
         })),
         (0, 1, 0, 1).into(),
     );
@@ -259,6 +260,7 @@ pub fn www_match<'a>(
         NodeValue::Link(Box::new(NodeLink {
             url,
             title: String::new(),
+            properties: Vec::new(),
         })),
         (0, 1, 0, 1).into(),
     );
@@ -436,6 +438,7 @@ pub fn url_match<'a>(
         NodeValue::Link(Box::new(NodeLink {
             url: url.to_string(),
             title: String::new(),
+            properties: Vec::new(),
         })),
         (0, 1, 0, 1).into(),
     );
