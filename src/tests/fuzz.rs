@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use super::*;
 
 #[test]
@@ -495,4 +497,73 @@ fn tasklist_and_escapes_do_not_play() {
             ])
         ])
     );
+}
+
+#[test]
+fn dont_try_this_at_home() {
+    assert_ast_match!(
+        [extension.alerts, extension.table, parse.ignore_setext],
+        "\u{3}\n--\nT",
+        (document (1:1-3:1) [
+            (table (1:1-3:1) [
+                (table_row (1:1-1:1) [
+                    (table_cell (1:1-1:1) [
+                        (text (1:1-1:1) "\u{3}")
+                    ])
+                ])
+                (table_row (3:1-3:1) [
+                    (table_cell (3:1-3:1) [
+                        (text (3:1-3:1) "T")
+                    ])
+                ])
+            ])
+        ])
+    );
+}
+
+#[test]
+fn cargo_run_no_cargo_road() {
+    assert_ast_match!(
+        [],
+        "\t",
+        (document (1:1-1:1))
+    );
+}
+
+#[test]
+fn oye_siri_prende_las_luces() {
+    assert_ast_match!(
+        [],
+        "* ",
+        (document (1:1-1:2) [
+            (list (1:1-1:2) [
+                (item (1:1-1:2))
+            ])
+        ])
+    );
+}
+
+#[test]
+fn cursed_lands() {
+    let mut opts = Options::default();
+    opts.extension.autolink = true;
+    opts.extension.footnotes = true;
+    opts.parse.smart = true;
+    opts.parse.relaxed_autolinks = true;
+
+    markdown_to_html("[^a@b.c--d]", &opts);
+}
+
+#[test]
+fn inquisitor() {
+    let mut opts = Options::default();
+    opts.parse.broken_link_callback = Some(Arc::new(|link_ref: options::BrokenLinkReference| {
+        Some(ResolvedReference {
+            url: link_ref.normalized.to_string(),
+            title: link_ref.original.to_string(),
+        })
+    }));
+    opts.render.width = 45;
+
+    markdown_to_commonmark("\0\0\0\0\0\0[\\`\r\n;][ww=\\-", &opts);
 }
